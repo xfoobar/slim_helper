@@ -19,7 +19,6 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/xfoobar/slim_helper",
     author="xfoobar",
-    # author_email="xfoobar@localhost.local",
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
