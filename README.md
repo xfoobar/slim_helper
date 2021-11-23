@@ -4,12 +4,12 @@ Simple helpers
 DbHelper:
 ```
 constructor:
-    config : Database connection params
+    config(Dict): Database connection params
     db_type(str): Database type
 usage:
+	from slim_helper.db_helper import DbHelper
     # SQlite:
-    from slim_helper.db_helper import DbHelper
-    config = {dbname:':memory:'}
+    config = {'dbname':':memory:'}
     with DbHelper(config,'sqlite') as db:
         db.execute("""
         CREATE TABLE foo (
@@ -28,8 +28,8 @@ usage:
     db.open()
     ...
     db.close()
-    
-    
+
+
     # PostgreSQL:
     config={'host':'localhost','port':'5432','dbname':'foobar','user':'foobar','password':'foobar'}
     with DbHelper(config,'postgresql') as db:
@@ -47,6 +47,28 @@ usage:
         print(result)
     # Or
     db=DbHelper(config,'postgresql')
+    db.open()
+    ...
+    db.close()
+
+
+    # Oracle:
+    config={'host':'localhost','port':'1521','dbname':'foobar','user':'foobar','password':'foobar','mode':None}
+    with DbHelper(config,'oracle') as db:
+        db.execute("""
+        CREATE TABLE foo (
+        id INTEGER PRIMARY KEY ,
+        txt VARCHAR2(100)
+        )
+        """)
+        db.execute("insert into foo values(:1,:2)",[1,'a'])
+        db.execute("insert into foo values(:1,:2)",[2,'b'])
+        db.execute("insert into foo values(:1,:2)",[3,'c'])
+        db.commit()
+        result = db.query("select * from foo where id=:1 and txt=:2", [2, 'b'])
+        print(result)
+    # Or
+    db=DbHelper(config,'oracle')
     db.open()
     ...
     db.close()
