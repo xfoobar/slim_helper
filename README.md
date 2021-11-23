@@ -9,7 +9,7 @@ constructor:
     config(Dict): Database connection params
     db_type(str): Database type
 usage:
-	from slim_helper.db_helper import DbHelper
+    from slim_helper.db_helper import DbHelper
     # SQlite:
     config = {'dbname':':memory:'}
     with DbHelper(config,'sqlite') as db:
