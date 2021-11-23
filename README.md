@@ -1,6 +1,8 @@
 # slimhelper
-Simple helpers
-
+A simple collection of helpers
+## Installation
+```pip install slim-helper```
+## Usage
 DbHelper:
 ```
 constructor:
