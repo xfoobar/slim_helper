@@ -7,13 +7,13 @@ pwd = pathlib.Path(__file__).parent
 # The text of the README file
 README = (pwd / "README.md").read_text()
 
-pack_name='slim_helper'
+package_name='slim_helper'
 
 # This call to setup() does all the work
 setup(
-    name=pack_name,
-    version="1.0.2",
-    python_requires='~=3.8',
+    name=package_name,
+    version="1.10.2",
+    python_requires='~=3.10',
     description="Simple helper",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -25,7 +25,11 @@ setup(
         "Programming Language :: Python :: 3",
         'Programming Language :: Python :: Implementation'
     ],
-    packages=[pack_name],
+    extras_require={
+        "oracle": ["oracledb>=1.1.0, <2.0.0"],
+        "postgresql": ["psycopg>=3.1.1, <4.0.0"]
+    },
+    packages=[package_name],
     include_package_data=True,
     install_requires=[],
     platforms=["all"]

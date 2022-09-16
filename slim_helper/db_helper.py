@@ -37,9 +37,10 @@ class IDbHelper:
             cursor.execute(sql, params)
         else:
             cursor.execute(sql)
+        columns = [description[0] for description in cursor.description]
         result = cursor.fetchall()
         cursor.close()
-        return result
+        return result,columns
 
     def execute(self, sql: str, params: Iterable = None) -> int:
         raise NotImplementedError("IDbHelper.execute() is not implemented")
@@ -58,66 +59,68 @@ class DbHelper(IDbHelper):
         db_type(str): Database type
     usage:
         # SQlite:
-        config = {'dbname':':memory:'}
-        with DbHelper(config,'sqlite') as db:
+        config = {'dbname': ':memory:'}
+        with DbHelper(config, 'sqlite') as db:
             db.execute("""
-            CREATE TABLE foo (
-            id INTEGER PRIMARY KEY ,
-            txt TEXT
-            )
-            """)
-            db.execute("insert into foo values(?,?)",[1,'a'])
-            db.execute("insert into foo values(?,?)",[2,'b'])
-            db.execute("insert into foo values(?,?)",[3,'c'])
+                 CREATE TABLE foo (
+                 id INTEGER PRIMARY KEY ,
+                 txt TEXT
+                 )
+                 """)
+            db.execute("insert into foo values(?,?)", [1, 'a'])
+            db.execute("insert into foo values(?,?)", [2, 'b'])
+            db.execute("insert into foo values(?,?)", [3, 'c'])
             db.commit()
-            result = db.query("select * from foo where id=? and txt=?", [2, 'b'])
-            print(result)
+            result,columns = db.query("select * from foo where id=? and txt=?", [2, 'b'])
+            print(result,columns)
         # Or
-        db=DbHelper(config,'sqlite')
+        db = DbHelper(config, 'sqlite')
         db.open()
         ...
         db.close()
 
 
         # PostgreSQL:
-        config={'host':'localhost','port':'5432','dbname':'foobar','user':'foobar','password':'foobar'}
-        with DbHelper(config,'postgresql') as db:
+        config = {'host': 'localhost', 'port': '5432',
+                  'dbname': 'foobar', 'user': 'foobar', 'password': 'foobar'}
+        with DbHelper(config, 'postgresql') as db:
             db.execute("""
-            CREATE TABLE foo (
-            id INTEGER PRIMARY KEY ,
-            txt TEXT
-            )
-            """)
-            db.execute("insert into foo values(%s,%s)",[1,'a'])
-            db.execute("insert into foo values(%s,%s)",[2,'b'])
-            db.execute("insert into foo values(%s,%s)",[3,'c'])
+                CREATE TABLE foo (
+                id INTEGER PRIMARY KEY ,
+                txt TEXT
+                )
+                """)
+            db.execute("insert into foo values(%s,%s)", [1, 'a'])
+            db.execute("insert into foo values(%s,%s)", [2, 'b'])
+            db.execute("insert into foo values(%s,%s)", [3, 'c'])
             db.commit()
-            result = db.query("select * from foo where id=%s and txt=%s", [2, 'b'])
-            print(result)
+            result,columns = db.query("select * from foo where id=%s and txt=%s", [2, 'b'])
+            print(result,columns)
         # Or
-        db=DbHelper(config,'postgresql')
+        db = DbHelper(config, 'postgresql')
         db.open()
         ...
         db.close()
 
 
         # Oracle:
-        config={'host':'localhost','port':'1521','dbname':'foobar','user':'foobar','password':'foobar','mode':None}
-        with DbHelper(config,'postgresql') as db:
+        config = {'host': 'localhost', 'port': '1521', 'dbname': 'foobar',
+                  'user': 'foobar', 'password': 'foobar', 'mode': None}
+        with DbHelper(config, 'postgresql') as db:
             db.execute("""
-            CREATE TABLE foo (
-            id INTEGER PRIMARY KEY ,
-            txt VARCHAR2(100)
-            )
-            """)
-            db.execute("insert into foo values(:1,:2)",[1,'a'])
-            db.execute("insert into foo values(:1,:2)",[2,'b'])
-            db.execute("insert into foo values(:1,:2)",[3,'c'])
+                CREATE TABLE foo (
+                id INTEGER PRIMARY KEY ,
+                txt VARCHAR2(100)
+                )
+                """)
+            db.execute("insert into foo values(:1,:2)", [1, 'a'])
+            db.execute("insert into foo values(:1,:2)", [2, 'b'])
+            db.execute("insert into foo values(:1,:2)", [3, 'c'])
             db.commit()
-            result = db.query("select * from foo where id=:1 and txt=:2", [2, 'b'])
-            print(result)
+            result,columns = db.query("select * from foo where id=:1 and txt=:2", [2, 'b'])
+            print(result,columns)
         # Or
-        db=DbHelper(config,'oracle')
+        db = DbHelper(config, 'oracle')
         db.open()
         ...
         db.close()
@@ -143,42 +146,28 @@ class DbHelper(IDbHelper):
                 dbname=self._config['dbname']
                 self._db_connection = sqlite3.connect(dbname)
             elif self._db_type == DbType.PostgreSQL:
-                import psycopg2
-                host=self._config['host']
-                port=self._config['port']
-                dbname=self._config['dbname']
-                user=self._config['user']
-                password=self._config['password']
-                self._db_connection=psycopg2.connect(
-                    host=host,
-                    port=port,
-                    dbname=dbname,
-                    user=user,
-                    password=password
+                import psycopg
+                from psycopg.conninfo import make_conninfo
+                conn_str=make_conninfo(
+                    host=self._config['host'],
+                    port=self._config['port'],
+                    dbname=self._config['dbname'],
+                    user=self._config['user'],
+                    password=self._config['password']
+                )
+                self._db_connection=psycopg.connect(
+                    conn_str,autocommit=False
                 )
             elif self._db_type == DbType.Oracle:
-                import cx_Oracle
+                import oracledb
                 host=self._config['host']
                 port=self._config['port']
                 dbname=self._config['dbname']
                 user=self._config['user']
                 password=self._config['password']
                 mode=self._config['mode']
-                if mode==None:
-                    self._db_connection=cx_Oracle.connect(
-                        user,
-                        password,
-                        f'{host}:{port}/{dbname}',
-                        encoding='utf-8'
-                    )
-                else:
-                    self._db_connection=cx_Oracle.connect(
-                        user,
-                        password,
-                        f'{host}:{port}/{dbname}',
-                        mode=mode,
-                        encoding='utf-8'
-                    )
+                cp=oracledb.ConnectParams(host=host,port=port,service_name=dbname,user=user,password=password,mode=mode)
+                self._db_connection=oracledb.connect(params=cp)
         else:
             raise RuntimeError('Database connection already exists')
 
